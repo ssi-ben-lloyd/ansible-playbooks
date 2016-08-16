@@ -1,0 +1,12 @@
+---
+mongo_server_user: dbuser
+mongo_server_dbpath: "/mnt/{{ mongo_device }}/mongo"
+mongo_server_devices:
+  - device: "{{ mongo_device }}"
+    dirs:
+      - { name: mongo, owner: mongod, group: mongod }
+      - { name: logs, owner: mongod, group: mongod }
+      - { name: debug, owner: debug, group: debug }
+mongo_server_logdir: "/mnt/{{ mongo_device }}/mongo/logs"
+mongo_server_logpath: "{{ mongo_server_logdir }}/mongod.log"
+

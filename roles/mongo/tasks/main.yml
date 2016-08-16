@@ -1,0 +1,123 @@
+---
+- name: assert | {{ item }}
+  tags: mongo
+  assert:
+    that:
+      - mongo_device is defined
+      - mongo_type is defined
+      - mongo_version is defined
+
+- name: yum_repository | mongo | 2.x community
+  yum_repository:
+    name: mongo
+    description: MongoDB YUM repo
+    baseurl: http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
+    gpgcheck: 0
+  when: 
+    mongo_version == "2.6.11-1" and mongo_type == "mongodb-org"    
+    
+- name: yum | {{ mongo_type }}-{{ mongo_version }}
+  tags: mongo
+  yum:
+    name={{ mongo_type }}-{{ mongo_version }}
+    state=present
+    update_cache=yes
+  register: mongo_yum
+
+- name: yum | libselinux-python
+  yum:
+    name=libselinux-python 
+    state=present
+
+- name: user | dbuser | mongod
+  tags: mongo
+  user:
+    name=dbuser
+    groups=mongod
+  when: mongo_yum.rc == 0
+
+- name: user | mongod | bash
+  tags: mongo
+  user:
+    name=mongod
+    shell=/bin/bash
+  when: mongo_yum.rc == 0
+
+- name: file | mongod.conf
+  tags: mongo
+  file:
+    path={{ item }}
+    state=touch
+    owner=root
+    group=mongod
+    mode=0664
+  with_items:
+    - /etc/mongod.conf
+  when: mongo_yum.rc == 0
+
+- name: lineinfile | mongod.conf | dbpath
+  tags: mongo
+  lineinfile:
+    dest=/etc/mongod.conf
+    regexp="^dbpath="
+    line="dbpath={{ mongo_server_dbpath }}"
+  when: mongo_yum.rc == 0
+
+- name: lineinfile | mongod.conf | logpath
+  tags: mongo
+  lineinfile:
+    dest=/etc/mongod.conf
+    regexp="^logpath="
+    line="logpath={{ mongo_server_logpath }}"
+  when: mongo_yum.rc == 0
+
+
+- name: template | {{ item.src }}
+  tags: mongo
+  template:
+    src={{ item.src }}
+    dest={{ item.dest }}
+    owner=root
+    group=root
+    mode=0644
+  with_items:
+    - { src: mongod.logrotate.j2, dest: /etc/logrotate.d/mongod }
+    - { src: mongod.sysconfig.j2, dest: /etc/sysconfig/mongod }
+  when: mongo_yum.rc == 0
+
+- name: file | {{ mongo_server_dbpath }} | directory
+  tags: mongo
+  file:
+    path={{ mongo_server_dbpath }}/{{ item }}
+    owner=mongod
+    group=mongod
+    state=directory
+    mode=0755
+  with_items:
+     - logs
+     - keyfile
+     - journal
+  when:
+    mongo_yum.rc == 0
+
+- name: service | mongod
+  tags: mongo
+  service:
+    name=mongod
+    enabled=yes
+  when: mongo_yum.rc == 0
+
+
+- name: file | /var/lib/mongo | symlink
+  tags: mongo
+  file:
+    src={{ mongo_server_dbpath }}
+    dest=/var/lib/mongo
+    state=link
+    owner=root
+    group=root
+    mode=0755
+    force=yes
+  when:
+    mongo_yum.rc == 0 
+

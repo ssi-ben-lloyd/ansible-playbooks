@@ -1,0 +1,15 @@
+- hosts: localhost
+  connection: local
+  sudo: no
+  tasks:
+  vars_prompt:
+    - name: "mongo_device"
+      prompt: "Please enter the device for the data mount (e.g. vdc, xvdb)"
+      private: no
+      default: "xvdb"
+
+  roles:
+    - role: mongo
+      mongo_type: mongodb-org
+      mongo_version: "2.6.11-1"
+

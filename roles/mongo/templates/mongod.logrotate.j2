@@ -1,0 +1,14 @@
+{% if mongo_server_logpath is defined %}
+{{ mongo_server_logpath }} {
+    daily
+    missingok
+    rotate 7
+    compress
+    notifempty
+    sharedscripts
+    postrotate
+        killall -SIGUSR1 mongod
+        find {{ mongo_server_logdir }} -type f -regex ".*\.\(log.[0-9].*-[0-9].*\)" -exec rm {} \;
+    endscript
+}
+{% endif %}

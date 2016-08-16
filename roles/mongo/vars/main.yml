@@ -1,0 +1,20 @@
+---
+pam_limits:
+  - name: mongod
+    order: 99
+    limits:
+      - domain: mongod
+        type: "-"
+        item: nofile
+        value: 64000
+      - domain: mongod
+        type: "-"
+        item: nproc
+        value: 64000
+sudoers:
+  - name: mongod
+    user: "{{ mongo_server_user }}"
+    commands:
+      - /etc/init.d/mongod *
+      - /bin/su *
+
