@@ -1,5 +1,5 @@
 ---
-- name: assert | {{ item }}
+- name: assert
   tags: mongo
   assert:
     that:
